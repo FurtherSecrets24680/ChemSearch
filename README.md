@@ -1,2 +1,2 @@
-# ChemSearch
-Simple chemical compound search webapp with data sourced from PubChem.
+## ChemSearch 
+ChemSearch is a simple webapp that retrieves basic chemical compound data from PubChem and generates short AI-based descriptions.
