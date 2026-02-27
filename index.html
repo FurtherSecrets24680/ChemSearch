@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChemSearch</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.0.4/3Dmol-min.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <link rel="icon" href="favicon.png" type="image/png">
+
+    <!-- KaTeX for LaTeX Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    colors: { brand: { 500: '#3b82f6', 600: '#2563eb' } }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* UI Polish */
+        body {
+            -webkit-font-smoothing: antialiased;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+
+        /* 3D Viewer */
+        #viewer-canvas {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Loader */
+        .loader {
+            border: 3px solid #e2e8f0;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Markdown-like styling for AI text */
+        .ai-text strong {
+            font-weight: 600;
+            color: #2563eb;
+        }
+
+        .dark .ai-text strong {
+            color: #60a5fa;
+        }
+
+        /* KaTeX Adjustments */
+        .katex {
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-gray-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100 h-screen flex flex-col md:flex-row">
+
+    <!-- SIDEBAR -->
+    <aside
+        class="w-full md:w-80 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 flex flex-col z-20 shadow-xl md:shadow-none">
+        <div class="p-5 border-b border-gray-100 dark:border-slate-700">
+                <div class="flex items-center justify-between mb-5">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white text-xl shadow-lg shadow-blue-500/30">
+                        <i class="ph-fill ph-flask"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg leading-none">ChemSearch</h1>
+                        <span class="text-[10px] font-bold text-blue-500 tracking-widest uppercase">Web Edition</span>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <button onclick="toggleTheme()" class="p-2 text-gray-400 hover:text-blue-500 transition-colors">
+                        <i class="ph-fill ph-moon dark:hidden"></i>
+                        <i class="ph-fill ph-sun hidden dark:block"></i>
+                    </button>
+                    <button id="aboutBtn" onclick="showAbout()" class="p-2 ml-2 text-gray-400 hover:text-blue-500 transition-colors" title="About this app">
+                        <i class="ph-fill ph-info"></i>
+                    </button>
+                    <button id="faqBtn" onclick="showFAQ()" class="p-2 ml-2 text-gray-400 hover:text-blue-500 transition-colors" title="FAQ">
+                        <i class="ph-fill ph-question"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="relative group">
+                <input type="text" id="searchInput" placeholder="Search chemical..."
+                    class="w-full pl-10 pr-12 py-3 bg-gray-100 dark:bg-slate-900 border-2 border-transparent focus:border-blue-500 focus:bg-white dark:focus:bg-slate-950 rounded-xl outline-none transition-all font-medium text-sm placeholder-gray-400"
+                    onkeypress="handleEnter(event)">
+                <i
+                    class="ph-bold ph-magnifying-glass absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-blue-500 transition-colors"></i>
+                <button id="clearSearchBtn" onclick="clearSearch()"
+                    class="absolute right-14 top-2 p-1.5 text-gray-400 hover:text-red-500 hover:bg-white dark:hover:bg-slate-800 rounded-md transition-all shadow-sm hidden"
+                    title="Clear search">
+                    <i class="ph-bold ph-x"></i>
+                </button>
+                <button onclick="searchChemical()"
+                    class="absolute right-2 top-2 p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-sm"
+                    title="Search">
+                    <i class="ph-bold ph-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <button id="historyToggle"
+            class="block md:hidden w-full py-2 px-4 bg-gray-100 dark:bg-slate-900 text-left font-medium text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">Show
+            History</button>
+
+        <div id="historyContainer" class="hidden md:block flex-1 overflow-y-auto p-2">
+            <div class="flex justify-end mb-2">
+                <button onclick="clearHistory()"
+                    class="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors">Clear
+                    History</button>
+            </div>
+            <div id="historyList" class="space-y-1"></div>
+        </div>
+    </aside>
+
+    <!-- MAIN AREA -->
+    <main class="flex-1 relative overflow-hidden flex flex-col bg-gray-50 dark:bg-slate-900">
+
+        <!-- Loading State -->
+        <div id="loader"
+            class="hidden absolute inset-0 bg-white/90 dark:bg-slate-900/90 z-50 flex flex-col items-center justify-center backdrop-blur-sm">
+            <div class="loader mb-4"></div>
+            <p class="text-sm font-semibold text-gray-500 animate-pulse">Running Analysis...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState"
+            class="absolute inset-0 flex flex-col items-center justify-center text-center p-6 text-gray-300 dark:text-slate-700 pointer-events-none">
+            <i class="ph-duotone ph-atom text-6xl md:text-9xl mb-4 opacity-50"></i>
+            <h2 class="text-xl font-bold text-gray-400 dark:text-slate-600">Enter a compound to begin</h2>
+        </div>
+
+        <!-- Content -->
+        <div id="content" class="hidden flex-1 overflow-y-auto p-4 md:p-8 custom-scroll">
+            <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+                <!-- Left: Visuals -->
+                <div class="lg:col-span-5 space-y-4">
+                    <div
+                        class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+                        <div class="flex border-b border-gray-100 dark:border-slate-700">
+                            <button onclick="setTab('2d')" id="tab-2d"
+                                class="flex-1 py-3 text-sm font-bold border-b-2 border-blue-500 text-blue-600 bg-blue-50/50 dark:bg-blue-900/20">2D
+                                Structure</button>
+                            <button onclick="setTab('3d')" id="tab-3d"
+                                class="flex-1 py-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">3D
+                                Model</button>
+                        </div>
+                        <div class="h-72 md:h-[360px] relative bg-white dark:bg-slate-800 flex items-center justify-center p-6">
+                            <img id="mol-img" class="max-h-full object-contain drop-shadow-sm" src="" alt="Structure">
+                            <div id="mol-3d" class="hidden w-full h-full relative cursor-move"></div>
+                            <div id="no-3d"
+                                class="hidden text-gray-400 text-sm font-medium flex flex-col items-center gap-2">
+                                <i class="ph-duotone ph-cube text-2xl"></i>
+                                3D Model Unavailable
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="downloadPNG()" class="btn-secondary">
+                            <i class="ph-bold ph-download-simple"></i> Save PNG
+                        </button>
+                        <button onclick="openExternal()" class="btn-secondary">
+                            <i class="ph-bold ph-arrow-square-out"></i> PubChem
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right: Data -->
+                <div class="lg:col-span-7 space-y-8 pb-10">
+
+                    <!-- Header -->
+                    <div>
+                        <h2 id="chem-name"
+                            class="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white leading-tight">
+                        </h2>
+                        <p id="chem-iupac"
+                            class="text-sm md:text-base text-gray-500 dark:text-gray-400 mt-1 font-mono break-words">
+                        </p>
+                    </div>
+
+                    <!-- Key Stats -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="stat-card">
+                            <span class="label">Formula</span>
+                            <div id="val-formula" class="value text-xl font-bold text-blue-600 dark:text-blue-400">-
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="label">Weight</span>
+                            <div id="val-weight" class="value">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="label">Charge</span>
+                            <div id="val-charge" class="value">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="label">Empirical</span>
+                            <div id="val-empirical" class="value">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Composition -->
+                    <div>
+                        <h3 class="section-title">Elemental Analysis</h3>
+                        <div id="composition-bar"
+                            class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-700 space-y-3 shadow-sm">
+                        </div>
+                    </div>
+
+                    <!-- Identifiers (SMILES) -->
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="group">
+                                <h3 class="section-title">SMILES (Connectivity)</h3>
+                                <div class="relative mt-1">
+                                    <div id="val-smiles-connectivity"
+                                        class="w-full bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-3 pr-12 font-mono text-sm text-gray-700 dark:text-gray-300 break-all leading-relaxed min-h-[3rem] flex items-center">
+                                        -
+                                    </div>
+                                    <button onclick="copyText('val-smiles-connectivity')"
+                                        class="absolute right-2 top-2 p-1.5 text-gray-400 hover:text-blue-500 hover:bg-white dark:hover:bg-slate-800 rounded-md transition-all shadow-sm">
+                                        <i class="ph-bold ph-copy text-lg"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="group">
+                                <h3 class="section-title">SMILES (Full)</h3>
+                                <div class="relative mt-1">
+                                    <div id="val-smiles-full"
+                                        class="w-full bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-3 pr-12 font-mono text-sm text-gray-700 dark:text-gray-300 break-all leading-relaxed min-h-[3rem] flex items-center">
+                                        -
+                                    </div>
+                                    <button onclick="copyText('val-smiles-full')"
+                                        class="absolute right-2 top-2 p-1.5 text-gray-400 hover:text-blue-500 hover:bg-white dark:hover:bg-slate-800 rounded-md transition-all shadow-sm">
+                                        <i class="ph-bold ph-copy text-lg"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="group">
+                            <h3 class="section-title">InChI Key</h3>
+                            <div class="relative mt-1">
+                                <div id="val-inchikey"
+                                    class="w-full bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-3 pr-12 font-mono text-sm text-gray-700 dark:text-gray-300 truncate">
+                                    -
+                                </div>
+                                <button onclick="copyText('val-inchikey')"
+                                    class="absolute right-2 top-1.5 p-1.5 text-gray-400 hover:text-blue-500 hover:bg-white dark:hover:bg-slate-800 rounded-md transition-all shadow-sm">
+                                    <i class="ph-bold ph-copy text-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- About & Synonyms -->
+                    <div id="section-about" class="hidden">
+                        <div class="flex items-center justify-between">
+                            <h3 class="section-title">Description</h3>
+                            <div class="flex gap-2 items-center">
+                                <button id="descPubBtn" onclick="setDescriptionSource('pubchem')"
+                                    class="text-xs px-3 py-1 rounded-full font-semibold transition-all bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-700/50">
+                                    PubChem
+                                </button>
+                                <div class="flex gap-1">
+                                    <button id="descAIBtn" onclick="handleAIDescriptionClick()"
+                                        class="text-xs px-3 py-1 rounded-full font-semibold transition-all bg-transparent text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600">
+                                        AI (Gemini)
+                                    </button>
+                                    <button id="regenerateAIBtn" onclick="regenerateAIDescription()" class="p-1 text-gray-400 hover:text-blue-500 transition-colors hidden" title="Regenerate AI description">
+                                        <i class="ph-bold ph-arrows-clockwise text-sm"></i>
+                                    </button>
+                                    <button id="editAPIKeyBtn" onclick="openAPIKeyModal()" class="p-1 text-gray-400 hover:text-blue-500 transition-colors" title="Edit API Key">
+                                        <i class="ph-bold ph-gear text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            class="mt-2 p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
+                            <div id="ai-loading"
+                                class="hidden absolute inset-0 bg-white/80 dark:bg-slate-800/80 flex items-center justify-center z-10">
+                                <div
+                                    class="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-medium text-sm animate-pulse">
+                                    <i class="ph-bold ph-sparkle"></i> Generating insights...
+                                </div>
+                            </div>
+                            <p id="val-desc" class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed ai-text">
+                            </p>
+                        </div>
+                    </div>
+
+                    <div id="section-synonyms" class="hidden">
+                        <h3 class="section-title">Common Synonyms</h3>
+                        <div id="list-synonyms" class="flex flex-wrap gap-2 mt-2"></div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast -->
+    <div id="toast" role="status" aria-live="polite"
+        class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 bg-slate-900 text-white px-4 py-3 rounded-lg shadow-xl translate-y-24 opacity-0 transition-all duration-300 flex items-center gap-3 z-50">
+        <i class="ph-fill ph-check-circle text-green-400 text-xl"></i>
+        <span id="toastMsg" class="font-medium">Copied to clipboard</span>
+    </div>
+
+    <!-- About Modal -->
+    <div id="aboutModalBackdrop" class="fixed inset-0 bg-black/40 dark:bg-black/50 backdrop-blur-sm hidden z-50 flex items-start sm:items-center justify-center py-6 overflow-y-auto" aria-hidden="true">
+        <div id="aboutModal" role="dialog" aria-modal="true" aria-labelledby="aboutTitle" tabindex="-1" class="max-w-xl w-full mx-4 max-h-[90vh] overflow-y-auto rounded-2xl p-6 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-gray-200 dark:border-slate-700 shadow-xl transform transition-all scale-95 opacity-0">
+            <div class="flex items-start justify-between">
+                <h3 id="aboutTitle" class="text-lg font-bold">About ChemSearch</h3>
+                <button onclick="hideAbout()" class="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white p-1" aria-label="Close about dialog"><i class="ph-fill ph-x"></i></button>
+            </div>
+            <div class="mt-3 text-sm space-y-3">
+                <p class="leading-relaxed">ChemSearch is a lightweight web tool for quickly looking up chemical structures and basic properties using PubChem data. It provides 2D images, 3D interactive views, identifiers and short AI-generated descriptions where available.</p>
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Credits & libraries used:</p>
+                    <div class="mt-2 overflow-hidden rounded-md border border-gray-100 dark:border-slate-700">
+                        <table class="w-full text-sm bg-white dark:bg-slate-800">
+                            <thead class="hidden">
+                                <tr><th>Library</th><th>Link</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b border-gray-100 dark:border-slate-700">
+                                    <td class="px-4 py-3 text-gray-700 dark:text-gray-200">Tailwind CSS</td>
+                                    <td class="px-4 py-3"><a href="https://tailwindcss.com" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">https://tailwindcss.com</a></td>
+                                </tr>
+                                <tr class="border-b border-gray-100 dark:border-slate-700">
+                                    <td class="px-4 py-3 text-gray-700 dark:text-gray-200">3Dmol.js</td>
+                                    <td class="px-4 py-3"><a href="https://3dmol.org" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">https://3dmol.org</a></td>
+                                </tr>
+                                <tr class="border-b border-gray-100 dark:border-slate-700">
+                                    <td class="px-4 py-3 text-gray-700 dark:text-gray-200">Phosphor Icons</td>
+                                    <td class="px-4 py-3"><a href="https://phosphoricons.com" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">https://phosphoricons.com</a></td>
+                                </tr>
+                                <tr class="border-b border-gray-100 dark:border-slate-700">
+                                    <td class="px-4 py-3 text-gray-700 dark:text-gray-200">KaTeX</td>
+                                    <td class="px-4 py-3"><a href="https://katex.org" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">https://katex.org</a></td>
+                                </tr>
+                                <tr class="border-b border-gray-100 dark:border-slate-700">
+                                    <td class="px-4 py-3 text-gray-700 dark:text-gray-200">PubChem PUG REST API</td>
+                                    <td class="px-4 py-3"><a href="https://pubchem.ncbi.nlm.nih.gov/" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">https://pubchem.ncbi.nlm.nih.gov/</a></td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-3 text-gray-700 dark:text-gray-200">Google Gemini / Generative AI</td>
+                                    <td class="px-4 py-3"><a href="https://developers.generativeai.google/" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">https://developers.generativeai.google/</a></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-400 dark:text-gray-500">If you use this app, please cite PubChem and the respective libraries. This project is provided as-is for educational use.</p>
+            </div>
+            <div class="mt-4 flex justify-end">
+                <button onclick="hideAbout()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAQ Modal -->
+    <div id="faqModalBackdrop" class="fixed inset-0 bg-black/40 dark:bg-black/50 backdrop-blur-sm hidden z-50 flex items-start sm:items-center justify-center py-6 overflow-y-auto" aria-hidden="true">
+        <div id="faqModal" role="dialog" aria-modal="true" aria-labelledby="faqTitle" tabindex="-1" class="max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto rounded-2xl p-6 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-gray-200 dark:border-slate-700 shadow-xl transform transition-all scale-95 opacity-0">
+            <div class="flex items-start justify-between">
+                <h3 id="faqTitle" class="text-lg font-bold">Frequently Asked Questions</h3>
+                <button onclick="hideFAQ()" class="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white p-1" aria-label="Close FAQ dialog"><i class="ph-fill ph-x"></i></button>
+            </div>
+            <div class="mt-3 text-sm space-y-3">
+                <div>
+                    <p class="font-bold">Where does the chemical data come from?</p>
+                    <p class="text-gray-700 dark:text-gray-300">Data is fetched live from the PubChem PUG REST API (public database maintained by NCBI).</p>
+                </div>
+                <div>
+                    <p class="font-bold">What is the AI description and is it required?</p>
+                    <p class="text-gray-700 dark:text-gray-300">Short descriptions are optionally generated using the configured Google Gemini API key. If unavailable, the app still shows raw PubChem data.</p>
+                </div>
+                <div>
+                    <p class="font-bold">Why is the 3D model sometimes missing?</p>
+                    <p class="text-gray-700 dark:text-gray-300">Not all PubChem records include a 3D SDF. When absent, the app displays an indicator and the 2D image instead.</p>
+                </div>
+
+                <div>
+                    <p class="font-bold">Can I use this offline?</p>
+                    <p class="text-gray-700 dark:text-gray-300">No — the app relies on live API calls to PubChem (and optionally Gemini) so it requires network access.</p>
+                </div>
+
+                <div>
+                    <p class="font-bold">Why are there two SMILES (Connectivity / Full) ?</p>
+                    <p class="text-gray-700 dark:text-gray-300">The connectivity SMILES is a minimal representation of the molecular structure, while the full SMILES includes all atoms and bonds. The full SMILES is more complete but can be longer and more complex.</p>
+                </div>
+            </div>
+            <div class="mt-4 flex justify-end">
+                <button onclick="hideFAQ()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Key Modal -->
+    <div id="apiKeyModalBackdrop" class="fixed inset-0 bg-black/40 dark:bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center" aria-hidden="true">
+        <div id="apiKeyModal" role="dialog" aria-modal="true" aria-labelledby="apiKeyTitle" tabindex="-1" class="w-full max-w-sm mx-4 rounded-2xl p-6 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-gray-200 dark:border-slate-700 shadow-xl">
+            <h3 id="apiKeyTitle" class="text-lg font-bold mb-2">Gemini API Key</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Enter your Google Gemini API key to enable AI-powered descriptions. Your key will be stored locally in your browser.</p>
+
+            <div class="space-y-4">
+                <div>
+                    <label for="apiKeyInput" class="block text-sm font-medium mb-2">API Key</label>
+                    <input type="password" id="apiKeyInput" placeholder="AIza..."
+                        class="w-full px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:outline-none transition-colors">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Get your free API key at <a href="https://ai.google.dev" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">ai.google.dev</a></p>
+                </div>
+
+                <div class="flex gap-3 justify-end">
+                    <button onclick="closeAPIKeyModal()" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors">Cancel</button>
+                    <button onclick="saveAPIKey()" class="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Save & Load</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .btn-secondary {
+            @apply flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl font-semibold text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all shadow-sm;
+        }
+
+        .stat-card {
+            @apply bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-200 dark:border-slate-700;
+        }
+
+        .stat-card .label {
+            @apply block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1;
+        }
+
+        .stat-card .value {
+            @apply font-mono font-medium text-gray-900 dark:text-white truncate;
+        }
+
+        .section-title {
+            @apply text-xs font-bold text-gray-400 uppercase tracking-wider;
+        }
+
+        /* Modal transitions (small custom CSS to complement Tailwind classes used above) */
+        #aboutModalBackdrop[data-open="true"], #faqModalBackdrop[data-open="true"] {
+            display: flex;
+        }
+
+        #aboutModal[data-open="true"], #faqModal[data-open="true"] {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        /* Ensure backdrops sit above other overlays like toast when open */
+        #aboutModalBackdrop, #faqModalBackdrop { z-index: 60; }
+    </style>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
