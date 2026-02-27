@@ -19,7 +19,7 @@ async function searchChemical(queryOverride) {
         state.name = query;
         updateHistory(query);
 
-        // 3. Fetch PubChem Data + description
+        // 3. Fetch PubChem Data + Description
         const [props, syns, sdf, desc] = await Promise.all([
             safeFetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/property/MolecularFormula,MolecularWeight,IUPACName,SMILES,ConnectivitySMILES,InChIKey,Charge/JSON`),
             safeFetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/synonyms/JSON`),
