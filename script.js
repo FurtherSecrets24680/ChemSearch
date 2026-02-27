@@ -31,7 +31,6 @@ async function searchChemical(queryOverride) {
         const p = props?.PropertyTable?.Properties?.[0] || {};
         const sList = syns?.InformationList?.Information?.[0]?.Synonym || [];
 
-        // Use official name if available for better display
         state.name = sList[0] || query;
         state.sdf = sdf;
         state.aiDesc = null; // Clear cached AI description for new compound
@@ -43,7 +42,6 @@ async function searchChemical(queryOverride) {
             const descItem = dList.find(i => i.Description);
             if (descItem) {
                 pubDescText = descItem.Description;
-                // If Description is an array, join it
                 if (Array.isArray(pubDescText)) {
                     pubDescText = pubDescText.join('\n\n');
                 }
@@ -68,9 +66,8 @@ async function searchChemical(queryOverride) {
         const aiBtn = document.getElementById('descAIBtn');
 
         descSec.classList.remove('hidden');
-        aiLoader.classList.add('hidden'); // Make sure loader is hidden initially
+        aiLoader.classList.add('hidden');
 
-        // Ensure buttons exist and are visible
         if (pubBtn) pubBtn.style.display = '';
         if (aiBtn) aiBtn.style.display = '';
 
@@ -82,7 +79,6 @@ async function searchChemical(queryOverride) {
             descVal.textContent = 'PubChem description not available for this compound.';
             console.log('No PubChem description available');
         }
-        // Update toggle UI to PubChem
         setDescriptionSource(state.descSource);
 
     } catch (e) {
@@ -191,7 +187,6 @@ function renderUI(props, synonyms) {
 function typewriterEffect(element, text, callback) {
     element.textContent = "";
     let index = 0;
-    // Faster typewriter for better UX
     const speed = 10;
 
     function type() {
@@ -583,7 +578,6 @@ function showAbout() {
         modal.setAttribute('data-open', 'true');
         modal.classList.remove('scale-95', 'opacity-0');
     });
-    // lock background scroll & focus
     document.body.style.overflow = 'hidden';
     setTimeout(() => modal.focus(), 120);
 }
@@ -594,7 +588,6 @@ function hideAbout() {
     if (!bd || !modal) return;
     bd.removeAttribute('data-open');
     modal.removeAttribute('data-open');
-    // restore page after transition
     setTimeout(() => {
         bd.classList.add('hidden');
         document.body.style.overflow = '';
@@ -627,7 +620,6 @@ function hideFAQ() {
     }, 180);
 }
 
-// Close when clicking backdrop (handles both modals)
 document.addEventListener('click', (e) => {
     const aBd = document.getElementById('aboutModalBackdrop');
     const fBd = document.getElementById('faqModalBackdrop');
@@ -635,7 +627,6 @@ document.addEventListener('click', (e) => {
     if (fBd && !fBd.classList.contains('hidden') && e.target === fBd) hideFAQ();
 });
 
-// Close on Escape when modal open (handles both)
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         const aBd = document.getElementById('aboutModalBackdrop');
