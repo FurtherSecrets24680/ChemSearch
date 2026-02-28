@@ -83,7 +83,7 @@ async function searchChemical(queryOverride) {
 
     } catch (e) {
         setLoading(false);
-        alert("Chemical not found. Please check spelling, try a synonym, or ensure the compound exists in PubChem.");
+        showError("Chemical not found. Please check spelling, try a synonym, or ensure the compound exists in PubChem.");
     }
 }
 
@@ -141,6 +141,17 @@ function renderUI(props, synonyms) {
     // Text Fields
     setText('chem-name', capitalize(state.name));
     setText('chem-iupac', props.IUPACName || "N/A");
+    // CID display (link to PubChem)
+    const cidEl = document.getElementById('chem-cid');
+    if (cidEl) {
+        if (state.cid) {
+            cidEl.textContent = state.cid;
+            cidEl.href = `https://pubchem.ncbi.nlm.nih.gov/compound/${state.cid}`;
+        } else {
+            cidEl.textContent = '-';
+            cidEl.href = '#';
+        }
+    }
 
     // Stats
     document.getElementById('val-formula').innerHTML = formatSub(props.MolecularFormula || "-");
@@ -280,7 +291,42 @@ function getEmpirical(f) {
 
 // --- UTILITIES ---
 function setText(id, val) { document.getElementById(id).textContent = val; }
-function formatSub(s) { return s.replace(/\d/g, m => "₀₁₂₃₄₅₆₇₈₉"[m]); }
+function formatSub(s) {
+    if (!s) return s;
+
+    // Detect trailing charge patterns like "-6", "+2", "2+", "+" or "-"
+    const chargeMatch = s.match(/([+\-]\d+|\d+[+\-]|[+\-])$/);
+    let main = s;
+    let charge = null;
+    if (chargeMatch) {
+        charge = chargeMatch[0];
+        main = s.slice(0, -charge.length);
+    }
+
+    // Replace digits in main formula with subscript digits
+    const subDigits = '₀₁₂₃₄₅₆₇₈₉';
+    const formattedMain = main.replace(/\d/g, m => subDigits[m]);
+
+    if (!charge) return formattedMain;
+
+    // Convert charge to superscript (use superscript digits and plus/minus)
+    const superDigits = { '0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹' };
+    const superPlus = '⁺';
+    const superMinus = '⁻';
+    let sup = '';
+    // Normalize formats like '2+' to '+2' for consistent rendering
+    if (/^\d+[+\-]$/.test(charge)) {
+        charge = charge.slice(-1) + charge.slice(0, -1);
+    }
+    for (const ch of charge) {
+        if (ch === '+') sup += superPlus;
+        else if (ch === '-') sup += superMinus;
+        else if (ch >= '0' && ch <= '9') sup += superDigits[ch] || ch;
+        else sup += ch;
+    }
+
+    return formattedMain + '<sup>' + sup + '</sup>';
+}
 function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 function setLoading(b) { document.getElementById('loader').classList.toggle('hidden', !b); }
 function handleEnter(e) { if (e.key === 'Enter') searchChemical(); }
@@ -620,18 +666,51 @@ function hideFAQ() {
     }, 180);
 }
 
+// Error modal (replaces native alert for not-found / errors)
+function showError(msg) {
+    const bd = document.getElementById('errorModalBackdrop');
+    const modal = document.getElementById('errorModal');
+    const msgEl = document.getElementById('errorMsg');
+    if (!bd || !modal || !msgEl) return;
+    msgEl.textContent = msg;
+    bd.classList.remove('hidden');
+    requestAnimationFrame(() => {
+        bd.setAttribute('data-open', 'true');
+        modal.setAttribute('data-open', 'true');
+        modal.classList.remove('scale-95', 'opacity-0');
+    });
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => modal.focus(), 120);
+}
+
+function hideError() {
+    const bd = document.getElementById('errorModalBackdrop');
+    const modal = document.getElementById('errorModal');
+    if (!bd || !modal) return;
+    bd.removeAttribute('data-open');
+    modal.removeAttribute('data-open');
+    setTimeout(() => {
+        bd.classList.add('hidden');
+        document.body.style.overflow = '';
+    }, 180);
+}
+
 document.addEventListener('click', (e) => {
     const aBd = document.getElementById('aboutModalBackdrop');
     const fBd = document.getElementById('faqModalBackdrop');
+    const errBd = document.getElementById('errorModalBackdrop');
     if (aBd && !aBd.classList.contains('hidden') && e.target === aBd) hideAbout();
     if (fBd && !fBd.classList.contains('hidden') && e.target === fBd) hideFAQ();
+    if (errBd && !errBd.classList.contains('hidden') && e.target === errBd) hideError();
 });
 
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         const aBd = document.getElementById('aboutModalBackdrop');
         const fBd = document.getElementById('faqModalBackdrop');
+        const errBd = document.getElementById('errorModalBackdrop');
         if (aBd && !aBd.classList.contains('hidden')) hideAbout();
         if (fBd && !fBd.classList.contains('hidden')) hideFAQ();
+        if (errBd && !errBd.classList.contains('hidden')) hideError();
     }
 });

@@ -1,7 +1,7 @@
 # ChemSearch
 
 ## **Overview**
-- **ChemSearch:** A lightweight single-page web app that looks up chemical compounds using the PubChem PUG REST API and displays basic properties, identifiers, 2D images and interactive 3D models. The app can also generate short AI descriptions (optional) via Google Generative AI (Gemini) when an API key is provided.
+**ChemSearch** is a lightweight single-page web app that looks up chemical compounds using the PubChem PUG REST API and displays basic properties, identifiers, 2D images and interactive 3D models. The app can also generate short AI descriptions (optional) via Google Generative AI (Gemini) when an API key is provided.
 
 ## **Features**
 - **Search:** Enter a compound name or synonym and press Enter or click the Search button.
@@ -28,7 +28,7 @@
 - **`style.css`**: Small set of styles and Tailwind helper classes.
 
 ## **Notes**
-- This is a static web app — no build step required. It fetches data from:
+- This is a static web app, so no build step required. It fetches data from:
 	- PubChem PUG REST API (compound properties, synonyms, SDF, PNG, description)
 	- Optional: Google Generative AI (Gemini) for AI descriptions
 - Recommended to view via a local static server to avoid any browser file-origin limitations when fetching remote resources.
