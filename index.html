@@ -255,7 +255,7 @@
                     <div class="space-y-4">
                         <div class="grid grid-cols-2 gap-4">
                             <div class="group">
-                                <h3 class="section-title">SMILES (Connectivity)</h3>
+                                <h3 class="section-title flex items-center gap-2">SMILES (Connectivity)<button onclick="showInfo('smiles-connectivity')" class="text-gray-400 hover:text-blue-500 transition-colors"><i class="ph-bold ph-info"></i></button></h3>
                                 <div class="relative mt-1">
                                     <div id="val-smiles-connectivity"
                                         class="w-full bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-3 pr-12 font-mono text-sm text-gray-700 dark:text-gray-300 break-all leading-relaxed min-h-[3rem] flex items-center">
@@ -269,7 +269,7 @@
                             </div>
 
                             <div class="group">
-                                <h3 class="section-title">SMILES (Full)</h3>
+                                <h3 class="section-title flex items-center gap-2">SMILES (Full)<button onclick="showInfo('smiles-full')" class="text-gray-400 hover:text-blue-500 transition-colors"><i class="ph-bold ph-info"></i></button></h3>
                                 <div class="relative mt-1">
                                     <div id="val-smiles-full"
                                         class="w-full bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-3 pr-12 font-mono text-sm text-gray-700 dark:text-gray-300 break-all leading-relaxed min-h-[3rem] flex items-center">
@@ -283,8 +283,23 @@
                             </div>
                         </div>
 
+                                                <!-- NEW: InChI -->
                         <div class="group">
-                            <h3 class="section-title">InChI Key</h3>
+                            <h3 class="section-title flex items-center gap-2">InChI<button onclick="showInfo('inchi')" class="text-gray-400 hover:text-blue-500 transition-colors"><i class="ph-bold ph-info"></i></button></h3>
+                            <div class="relative mt-1">
+                                <div id="val-inchi"
+                                    class="w-full bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-3 pr-12 font-mono text-sm text-gray-700 dark:text-gray-300 break-all leading-relaxed min-h-[3rem] flex items-center">
+                                    -
+                                </div>
+                                <button onclick="copyText('val-inchi')"
+                                    class="absolute right-2 top-2 p-1.5 text-gray-400 hover:text-blue-500 hover:bg-white dark:hover:bg-slate-800 rounded-md transition-all shadow-sm">
+                                    <i class="ph-bold ph-copy text-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="group">
+                            <h3 class="section-title flex items-center gap-2">InChI Key<button onclick="showInfo('inchikey')" class="text-gray-400 hover:text-blue-500 transition-colors"><i class="ph-bold ph-info"></i></button></h3>
                             <div class="relative mt-1">
                                 <div id="val-inchikey"
                                     class="w-full bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-3 pr-12 font-mono text-sm text-gray-700 dark:text-gray-300 truncate">
@@ -301,11 +316,22 @@
                     <!-- About & Synonyms -->
                     <div id="section-about" class="hidden">
                         <div class="flex items-center justify-between">
-                            <h3 class="section-title">Description</h3>
+                            <div class="flex items-center gap-2">
+                                <h3 class="section-title">Description</h3>
+                                <button onclick="openDefaultSettingsModal()" class="text-gray-400 hover:text-blue-500 transition-colors" title="Set default description source">
+                                    <i class="ph-fill ph-gear"></i>
+                                </button>
+                            </div>
+
                             <div class="flex gap-2 items-center">
                                 <button id="descPubBtn" onclick="setDescriptionSource('pubchem')"
                                     class="text-xs px-3 py-1 rounded-full font-semibold transition-all bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-700/50">
                                     PubChem
+                                </button>
+                                <!-- NEW: Wikipedia button -->
+                                <button id="descWikiBtn" onclick="handleWikiDescriptionClick()"
+                                    class="text-xs px-3 py-1 rounded-full font-semibold transition-all bg-transparent text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600">
+                                    Wikipedia
                                 </button>
                                 <div class="flex gap-1">
                                     <button id="descAIBtn" onclick="handleAIDescriptionClick()"
@@ -427,6 +453,12 @@
                                     <td class="px-4 py-3 text-gray-700 dark:text-gray-200">PubChem PUG REST API</td>
                                     <td class="px-4 py-3"><a href="https://pubchem.ncbi.nlm.nih.gov/" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">https://pubchem.ncbi.nlm.nih.gov/</a></td>
                                 </tr>
+
+                                <tr class="border-b border-gray-100 dark:border-slate-700">
+                                    <td class="px-4 py-3 text-gray-700 dark:text-gray-200">Wikipedia REST API</td>
+                                    <td class="px-4 py-3"><a href="https://en.wikipedia.org/api/rest_v1/" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">https://en.wikipedia.org/api/rest_v1/</a></td>
+                                </tr>
+
                                 <tr>
                                     <td class="px-4 py-3 text-gray-700 dark:text-gray-200">Google Gemini / Generative AI</td>
                                     <td class="px-4 py-3"><a href="https://developers.generativeai.google/" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">https://developers.generativeai.google/</a></td>
@@ -435,8 +467,7 @@
                         </table>
                     </div>
                 </div>
-                <p class="text-xs text-gray-400 dark:text-gray-500">If you use this app, please cite PubChem and the respective libraries. This project is provided as-is for educational use.</p>
-            </div>
+                    <p class="text-xs text-gray-400 dark:text-gray-500">If you use this app, please cite PubChem, Wikipedia, and the respective libraries. This project is provided as-is for educational use.</p>            </div>
             <div class="mt-4 flex justify-end">
                 <button onclick="hideAbout()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Close</button>
             </div>
@@ -552,6 +583,31 @@
     </style>
 
     <script src="script.js"></script>
+
+        <!-- Default Description Settings Modal -->
+    <div id="defaultSettingsModalBackdrop" class="fixed inset-0 bg-black/40 dark:bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center" aria-hidden="true">
+        <div id="defaultSettingsModal" role="dialog" aria-modal="true" class="w-full max-w-sm mx-4 rounded-2xl p-6 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-gray-200 dark:border-slate-700 shadow-xl">
+            <h3 class="text-lg font-bold mb-4">Default Description Source</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Choose which description appears automatically on every new search.</p>
+            <div class="space-y-2">
+                <button onclick="setDefaultDescSource('pubchem')" class="w-full text-left px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center justify-between">
+                    <span>PubChem</span>
+                    <span id="default-pubchem" class="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded">default</span>
+                </button>
+                <button onclick="setDefaultDescSource('wiki')" class="w-full text-left px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center justify-between">
+                    <span>Wikipedia</span>
+                    <span id="default-wiki" class="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded hidden">default</span>
+                </button>
+                <button onclick="setDefaultDescSource('ai')" class="w-full text-left px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center justify-between">
+                    <span>AI (Gemini)</span>
+                    <span id="default-ai" class="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded hidden">default</span>
+                </button>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button onclick="closeDefaultSettingsModal()" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors">Close</button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

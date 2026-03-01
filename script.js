@@ -1,4 +1,4 @@
-const state = { cid: null, name: '', sdf: null, pubDesc: null, aiDesc: null, descSource: 'pubchem' };
+const state = { cid: null, name: '', sdf: null, pubDesc: null, aiDesc: null, wikiDesc: null, descSource: 'pubchem' };
 
 // --- CORE LOGIC ---
 async function searchChemical(queryOverride) {
@@ -19,9 +19,12 @@ async function searchChemical(queryOverride) {
         state.name = query;
         updateHistory(query);
 
+        state.wikiDesc = null;     // Clear old Wikipedia description
+        state.descSource = 'pubchem'; // Force PubChem as default for every new search
+
         // 3. Fetch PubChem Data + Description
         const [props, syns, sdf, desc] = await Promise.all([
-            safeFetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/property/MolecularFormula,MolecularWeight,IUPACName,SMILES,ConnectivitySMILES,InChIKey,Charge/JSON`),
+            safeFetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/property/MolecularFormula,MolecularWeight,IUPACName,SMILES,ConnectivitySMILES,InChIKey,InChI,Charge/JSON`),
             safeFetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/synonyms/JSON`),
             safeFetchText(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/SDF?record_type=3d`),
             safeFetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/description/JSON`)
@@ -71,15 +74,23 @@ async function searchChemical(queryOverride) {
         if (pubBtn) pubBtn.style.display = '';
         if (aiBtn) aiBtn.style.display = '';
 
-        // Render PubChem description by default
-        if (state.pubDesc) {
-            descVal.textContent = state.pubDesc;
-            console.log('Displaying PubChem description');
-        } else {
-            descVal.textContent = 'PubChem description not available for this compound.';
-            console.log('No PubChem description available');
+        // NEW: Respect user-chosen default description source
+        const savedDefault = localStorage.getItem('defaultDescSource') || 'pubchem';
+        state.descSource = savedDefault;
+
+        if (savedDefault === 'pubchem') {
+            const descVal = document.getElementById('val-desc');
+            if (state.pubDesc) {
+                descVal.textContent = state.pubDesc;
+            } else {
+                descVal.textContent = 'PubChem description not available for this compound.';
+            }
+            setDescriptionSource('pubchem');
+        } else if (savedDefault === 'wiki') {
+            fetchAndDisplayWiki();   // auto-fetches and displays
+        } else if (savedDefault === 'ai') {
+            fetchAndDisplayAI();     // auto-fetches with loader
         }
-        setDescriptionSource(state.descSource);
 
     } catch (e) {
         setLoading(false);
@@ -137,6 +148,27 @@ async function fetchGeminiDescription(chemName) {
     }
 }
 
+// === Wikipedia short description (first paragraph only) ===
+async function fetchWikiDescription(chemName) {
+    try {
+        // FIX: Convert ALL-CAPS PubChem name (like "PENTANE") to Title Case ("Pentane")
+        // This is why pentane was failing — Wikipedia needs "Pentane", not "PENTANE"
+        let title = chemName.trim();
+        if (title.length > 0) {
+            title = title.charAt(0).toUpperCase() + title.slice(1).toLowerCase();
+        }
+        
+        const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+        const response = await fetch(url);
+        if (!response.ok) return null;
+        const data = await response.json();
+        return data.extract || null;
+    } catch (error) {
+        console.error("Wikipedia Fetch Error:", error);
+        return null;
+    }
+}
+
 function renderUI(props, synonyms) {
     // Text Fields
     setText('chem-name', capitalize(state.name));
@@ -165,6 +197,7 @@ function renderUI(props, synonyms) {
     setText('val-smiles-connectivity', connectivitySmiles);
     setText('val-smiles-full', fullSmiles);
     setText('val-inchikey', props.InChIKey || "-");
+    setText('val-inchi', props.InChI || "-");
 
     // Composition
     renderComposition(props.MolecularFormula);
@@ -415,59 +448,48 @@ function toggleTheme() {
 
 // Description toggle control (pubchem | ai)
 function setDescriptionSource(src) {
-    src = src === 'ai' ? 'ai' : 'pubchem';
+    src = src === 'ai' ? 'ai' : src === 'wiki' ? 'wiki' : 'pubchem';
     state.descSource = src;
     const pubBtn = document.getElementById('descPubBtn');
+    const wikiBtn = document.getElementById('descWikiBtn');
     const aiBtn = document.getElementById('descAIBtn');
     const descVal = document.getElementById('val-desc');
     const aiLoader = document.getElementById('ai-loading');
     const regenerateBtn = document.getElementById('regenerateAIBtn');
 
-    // Always hide the loader when switching sources
     aiLoader.classList.add('hidden');
 
     if (src === 'ai') {
         pubBtn.classList.remove('bg-blue-50', 'text-blue-700', 'dark:bg-blue-900/30', 'dark:text-blue-300', 'border-blue-200', 'dark:border-blue-700/50');
         pubBtn.classList.add('bg-transparent', 'text-gray-500', 'dark:text-gray-400', 'border-gray-200', 'dark:border-gray-700');
+        if (wikiBtn) wikiBtn.classList.add('bg-transparent', 'text-gray-500', 'dark:text-gray-400', 'border-gray-200', 'dark:border-gray-700');
         aiBtn.classList.remove('bg-transparent', 'text-gray-500', 'dark:text-gray-400', 'border-gray-200', 'dark:border-gray-700');
         aiBtn.classList.add('bg-blue-50', 'text-blue-700', 'dark:bg-blue-900/30', 'dark:text-blue-300', 'border-blue-200', 'dark:border-blue-700/50');
 
-        // Show regenerate button only when AI description is active
         if (state.aiDesc) {
             regenerateBtn.classList.remove('hidden');
-        } else {
-            regenerateBtn.classList.add('hidden');
-        }
-
-        if (state.aiDesc) {
-            // Render AI description with typewriter and KaTeX
             descVal.textContent = '';
             typewriterEffect(descVal, state.aiDesc, () => {
-                if (window.renderMathInElement) {
-                    renderMathInElement(descVal, {
-                        delimiters: [
-                            { left: '$$', right: '$$', display: true },
-                            { left: '$', right: '$', display: false },
-                            { left: '\\(', right: '\\)', display: false },
-                            { left: '\\[', right: '\\]', display: true }
-                        ],
-                        throwOnError: false
-                    });
-                }
+                if (window.renderMathInElement) renderMathInElement(descVal, { delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}], throwOnError:false });
             });
         } else {
             descVal.textContent = 'AI description not available.';
         }
+    } else if (src === 'wiki') {
+        pubBtn.classList.add('bg-transparent', 'text-gray-500', 'dark:text-gray-400', 'border-gray-200', 'dark:border-gray-700');
+        if (wikiBtn) {
+            wikiBtn.classList.remove('bg-transparent', 'text-gray-500', 'dark:text-gray-400', 'border-gray-200', 'dark:border-gray-700');
+            wikiBtn.classList.add('bg-blue-50', 'text-blue-700', 'dark:bg-blue-900/30', 'dark:text-blue-300', 'border-blue-200', 'dark:border-blue-700/50');
+        }
+        aiBtn.classList.add('bg-transparent', 'text-gray-500', 'dark:text-gray-400', 'border-gray-200', 'dark:border-gray-700');
+        regenerateBtn.classList.add('hidden');
+        descVal.textContent = state.wikiDesc || 'Wikipedia description not available.';
     } else {
-        // show pubchem
-        aiBtn.classList.remove('bg-blue-50', 'text-blue-700', 'dark:bg-blue-900/30', 'dark:text-blue-300', 'border-blue-200', 'dark:border-blue-700/50');
+        if (wikiBtn) wikiBtn.classList.add('bg-transparent', 'text-gray-500', 'dark:text-gray-400', 'border-gray-200', 'dark:border-gray-700');
         aiBtn.classList.add('bg-transparent', 'text-gray-500', 'dark:text-gray-400', 'border-gray-200', 'dark:border-gray-700');
         pubBtn.classList.remove('bg-transparent', 'text-gray-500', 'dark:text-gray-400', 'border-gray-200', 'dark:border-gray-700');
         pubBtn.classList.add('bg-blue-50', 'text-blue-700', 'dark:bg-blue-900/30', 'dark:text-blue-300', 'border-blue-200', 'dark:border-blue-700/50');
-
-        // Hide regenerate button when not on AI description
         regenerateBtn.classList.add('hidden');
-
         descVal.textContent = state.pubDesc || 'Description unavailable.';
     }
 }
@@ -556,6 +578,75 @@ function regenerateAIDescription() {
         state.aiDesc = null;
         fetchAndDisplayAI();
     }
+}
+
+function handleWikiDescriptionClick() {
+    if (state.wikiDesc) {
+        setDescriptionSource('wiki');
+    } else {
+        fetchAndDisplayWiki();
+    }
+}
+
+async function fetchAndDisplayWiki() {
+    fetchWikiDescription(state.name).then(wikiDesc => {
+        if (wikiDesc) {
+            state.wikiDesc = wikiDesc;
+            setDescriptionSource('wiki');
+        } else {
+            showToast('Wikipedia description not available for this compound.');
+            setDescriptionSource('pubchem');
+        }
+    }).catch(() => {
+        showToast('Error fetching Wikipedia description');
+        setDescriptionSource('pubchem');
+    });
+}
+
+// === Default Description Settings ===
+function openDefaultSettingsModal() {
+    const bd = document.getElementById('defaultSettingsModalBackdrop');
+    bd.classList.remove('hidden');
+    updateDefaultBadges();
+}
+
+function closeDefaultSettingsModal() {
+    const bd = document.getElementById('defaultSettingsModalBackdrop');
+    bd.classList.add('hidden');
+}
+
+function setDefaultDescSource(src) {
+    localStorage.setItem('defaultDescSource', src);
+    updateDefaultBadges();
+    closeDefaultSettingsModal();
+    showToast(`Default set to ${src.toUpperCase()}`);
+}
+
+function updateDefaultBadges() {
+    const def = localStorage.getItem('defaultDescSource') || 'pubchem';
+    document.getElementById('default-pubchem').classList.toggle('hidden', def !== 'pubchem');
+    document.getElementById('default-wiki').classList.toggle('hidden', def !== 'wiki');
+    document.getElementById('default-ai').classList.toggle('hidden', def !== 'ai');
+}
+
+// === Identifier Info Buttons ===
+function showInfo(type) {
+    let title = '';
+    let text = '';
+    if (type === 'smiles-connectivity') {
+        title = 'SMILES (Connectivity)';
+        text = 'A simplified line notation that shows which atoms are connected. It ignores stereochemistry and explicit hydrogens for brevity.';
+    } else if (type === 'smiles-full') {
+        title = 'SMILES (Full)';
+        text = 'Complete SMILES including all atoms, bonds, branches, and stereochemistry information.';
+    } else if (type === 'inchi') {
+        title = 'InChI';
+        text = 'International Chemical Identifier — a unique, standardized string that fully describes a molecule\'s structure (machine-readable).';
+    } else if (type === 'inchikey') {
+        title = 'InChI Key';
+        text = 'A 27-character hashed version of the InChI, designed for fast web/database searches. It is not reversible to the full structure.';
+    }
+    alert(title + '\n\n' + text);
 }
 
 // Close API key modal when clicking backdrop
@@ -702,6 +793,8 @@ document.addEventListener('click', (e) => {
     if (aBd && !aBd.classList.contains('hidden') && e.target === aBd) hideAbout();
     if (fBd && !fBd.classList.contains('hidden') && e.target === fBd) hideFAQ();
     if (errBd && !errBd.classList.contains('hidden') && e.target === errBd) hideError();
+    const defaultBd = document.getElementById('defaultSettingsModalBackdrop');
+    if (defaultBd && !defaultBd.classList.contains('hidden') && e.target === defaultBd) closeDefaultSettingsModal();
 });
 
 document.addEventListener('keydown', (e) => {
@@ -712,5 +805,7 @@ document.addEventListener('keydown', (e) => {
         if (aBd && !aBd.classList.contains('hidden')) hideAbout();
         if (fBd && !fBd.classList.contains('hidden')) hideFAQ();
         if (errBd && !errBd.classList.contains('hidden')) hideError();
+        const defaultBd = document.getElementById('defaultSettingsModalBackdrop');
+        if (defaultBd && !defaultBd.classList.contains('hidden')) closeDefaultSettingsModal();
     }
 });
