@@ -19,8 +19,8 @@ async function searchChemical(queryOverride) {
         state.name = query;
         updateHistory(query);
 
-        state.wikiDesc = null;     // Clear old Wikipedia description
-        state.descSource = 'pubchem'; // Force PubChem as default for every new search
+        state.wikiDesc = null;
+        state.descSource = 'pubchem';
 
         // 3. Fetch PubChem Data + Description
         const [props, syns, sdf, desc] = await Promise.all([
@@ -36,9 +36,8 @@ async function searchChemical(queryOverride) {
 
         state.name = sList[0] || query;
         state.sdf = sdf;
-        state.aiDesc = null; // Clear cached AI description for new compound
+        state.aiDesc = null;
 
-        // PubChem description - fixed parsing logic from prototype
         let pubDescText = null;
         if (desc?.InformationList?.Information) {
             const dList = desc.InformationList.Information || [];
@@ -74,7 +73,6 @@ async function searchChemical(queryOverride) {
         if (pubBtn) pubBtn.style.display = '';
         if (aiBtn) aiBtn.style.display = '';
 
-        // NEW: Respect user-chosen default description source
         const savedDefault = localStorage.getItem('defaultDescSource') || 'pubchem';
         state.descSource = savedDefault;
 
@@ -87,9 +85,9 @@ async function searchChemical(queryOverride) {
             }
             setDescriptionSource('pubchem');
         } else if (savedDefault === 'wiki') {
-            fetchAndDisplayWiki();   // auto-fetches and displays
+            fetchAndDisplayWiki();
         } else if (savedDefault === 'ai') {
-            fetchAndDisplayAI();     // auto-fetches with loader
+            fetchAndDisplayAI();
         }
 
     } catch (e) {
@@ -151,8 +149,7 @@ async function fetchGeminiDescription(chemName) {
 // === Wikipedia short description (first paragraph only) ===
 async function fetchWikiDescription(chemName) {
     try {
-        // FIX: Convert ALL-CAPS PubChem name (like "PENTANE") to Title Case ("Pentane")
-        // This is why pentane was failing — Wikipedia needs "Pentane", not "PENTANE"
+        // Convert ALL-CAPS PubChem name (like "PENTANE") to Title Case ("Pentane")
         let title = chemName.trim();
         if (title.length > 0) {
             title = title.charAt(0).toUpperCase() + title.slice(1).toLowerCase();
@@ -239,7 +236,7 @@ function typewriterEffect(element, text, callback) {
             index++;
             setTimeout(type, speed);
         } else if (callback) {
-            callback(); // Render Latex when done
+            callback();
         }
     }
     type();
@@ -446,7 +443,7 @@ function toggleTheme() {
     localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
 }
 
-// Description toggle control (pubchem | ai)
+// Description toggle control (pubchem | wikipedia | ai)
 function setDescriptionSource(src) {
     src = src === 'ai' ? 'ai' : src === 'wiki' ? 'wiki' : 'pubchem';
     state.descSource = src;
@@ -521,10 +518,9 @@ function saveAPIKey() {
     closeAPIKeyModal();
     showToast('API key saved successfully');
 
-    // If we have a cid loaded, fetch the AI description now
     if (state.cid) {
-        state.aiDesc = null; // Clear cached description to force fresh fetch with new key
-        state.descSource = 'pubchem'; // Reset to pubchem before fetching
+        state.aiDesc = null;
+        state.descSource = 'pubchem';
         setDescriptionSource('pubchem');
         fetchAndDisplayAI();
     }
@@ -535,10 +531,8 @@ function handleAIDescriptionClick() {
     if (!hasKey) {
         openAPIKeyModal();
     } else if (state.aiDesc) {
-        // If we already have AI description cached, just show it
         setDescriptionSource('ai');
     } else {
-        // Fetch new AI description
         fetchAndDisplayAI();
     }
 }
@@ -574,7 +568,6 @@ function regenerateAIDescription() {
     if (!hasKey) {
         openAPIKeyModal();
     } else {
-        // Force fresh fetch and replace cached description
         state.aiDesc = null;
         fetchAndDisplayAI();
     }
@@ -603,6 +596,82 @@ async function fetchAndDisplayWiki() {
     });
 }
 
+// === SEARCH AUTOSUGGESTIONS (PubChem Auto-Complete API) ===
+let debounceTimer = null;
+
+function initAutosuggestions() {
+    const input = document.getElementById('searchInput');
+    
+    input.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(fetchSuggestions, 280);
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        const dropdown = document.getElementById('suggestionsDropdown');
+        if (!input.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            document.getElementById('suggestionsDropdown').classList.add('hidden');
+        }
+    });
+}
+
+async function fetchSuggestions() {
+    const input = document.getElementById('searchInput');
+    const query = input.value.trim();
+    
+    if (query.length < 3) {
+        document.getElementById('suggestionsDropdown').classList.add('hidden');
+        return;
+    }
+
+    try {
+        const url = `https://pubchem.ncbi.nlm.nih.gov/rest/autocomplete/Compound/${encodeURIComponent(query)}/json`;
+        const res = await fetch(url);
+        if (!res.ok) return;
+
+        const data = await res.json();
+        const suggestions = data.dictionary_terms?.compound || [];
+
+        renderSuggestions(suggestions.slice(0, 15)); // max 15 results
+    } catch (e) {
+        console.error("Autosuggest error:", e);
+    }
+}
+
+function renderSuggestions(suggestions) {
+    const list = document.getElementById('suggestionsList');
+    const dropdown = document.getElementById('suggestionsDropdown');
+    
+    list.innerHTML = '';
+
+    if (suggestions.length === 0) {
+        dropdown.classList.add('hidden');
+        return;
+    }
+
+    suggestions.forEach(sug => {
+        const li = document.createElement('li');
+        li.className = "px-5 py-2.5 hover:bg-blue-50 dark:hover:bg-slate-700 cursor-pointer transition-colors";
+        li.textContent = sug;
+        li.onclick = () => {
+            const input = document.getElementById('searchInput');
+            input.value = sug;
+            dropdown.classList.add('hidden');
+            searchChemical();
+        };
+        list.appendChild(li);
+    });
+
+    dropdown.classList.remove('hidden');
+}
+
 // === Default Description Settings ===
 function openDefaultSettingsModal() {
     const bd = document.getElementById('defaultSettingsModalBackdrop');
@@ -629,6 +698,54 @@ function updateDefaultBadges() {
     document.getElementById('default-ai').classList.toggle('hidden', def !== 'ai');
 }
 
+// === FEEDBACK MODAL WITH FORMSPREE ===
+function openFeedbackModal() {
+    document.getElementById('feedbackModalBackdrop').classList.remove('hidden');
+    document.getElementById('feedbackMessage').focus();
+}
+
+function closeFeedbackModal() {
+    const bd = document.getElementById('feedbackModalBackdrop');
+    bd.classList.add('hidden');
+    document.getElementById('feedbackForm').reset();
+}
+
+async function handleFeedbackSubmit(e) {
+    e.preventDefault();
+
+    const btn = document.getElementById('feedbackSubmitBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = 'Sending...';
+    btn.disabled = true;
+
+    const formData = new FormData();
+    formData.append('message', document.getElementById('feedbackMessage').value);
+    formData.append('email / name', document.getElementById('feedbackEmail').value || 'anonymous@chemsearch.app');
+    formData.append('_subject', 'ChemSearch Feedback');
+
+    const FORMSPREE_ENDPOINT = "https://formspree.io/f/mykdqyrg";
+
+    try {
+        const res = await fetch(FORMSPREE_ENDPOINT, {
+            method: 'POST',
+            body: formData,
+            headers: { 'Accept': 'application/json' }
+        });
+
+        if (res.ok) {
+            showToast("Thank you! Feedback sent successfully ❤️");
+            closeFeedbackModal();
+        } else {
+            showToast("Failed to send. Please try again.");
+        }
+    } catch (err) {
+        showToast("Network error. Please check your connection.");
+    }
+
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+}
+
 // === Identifier Info Buttons ===
 function showInfo(type) {
     let title = '';
@@ -649,7 +766,6 @@ function showInfo(type) {
     alert(title + '\n\n' + text);
 }
 
-// Close API key modal when clicking backdrop
 document.addEventListener('click', (e) => {
     const bd = document.getElementById('apiKeyModalBackdrop');
     if (bd && !bd.classList.contains('hidden') && e.target === bd) {
@@ -657,7 +773,6 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Close on Escape
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         const bd = document.getElementById('apiKeyModalBackdrop');
@@ -709,7 +824,6 @@ function showAbout() {
     const modal = document.getElementById('aboutModal');
     if (!bd || !modal) return;
     bd.classList.remove('hidden');
-    // trigger transition
     requestAnimationFrame(() => {
         bd.setAttribute('data-open', 'true');
         modal.setAttribute('data-open', 'true');
@@ -795,6 +909,8 @@ document.addEventListener('click', (e) => {
     if (errBd && !errBd.classList.contains('hidden') && e.target === errBd) hideError();
     const defaultBd = document.getElementById('defaultSettingsModalBackdrop');
     if (defaultBd && !defaultBd.classList.contains('hidden') && e.target === defaultBd) closeDefaultSettingsModal();
+    const fbBd = document.getElementById('feedbackModalBackdrop');
+    if (fbBd && !fbBd.classList.contains('hidden') && e.target === fbBd) closeFeedbackModal();
 });
 
 document.addEventListener('keydown', (e) => {
@@ -807,5 +923,10 @@ document.addEventListener('keydown', (e) => {
         if (errBd && !errBd.classList.contains('hidden')) hideError();
         const defaultBd = document.getElementById('defaultSettingsModalBackdrop');
         if (defaultBd && !defaultBd.classList.contains('hidden')) closeDefaultSettingsModal();
+        const fbBd = document.getElementById('feedbackModalBackdrop');
+        if (fbBd && !fbBd.classList.contains('hidden')) closeFeedbackModal();
     }
 });
+
+// Init Autosuggestions
+initAutosuggestions();

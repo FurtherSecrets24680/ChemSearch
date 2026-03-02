@@ -135,6 +135,12 @@
                     <i class="ph-bold ph-arrow-right"></i>
                 </button>
             </div>
+
+                <!-- Autosuggestions dropdown (compact width) -->
+                <div id="suggestionsDropdown" 
+                    class="hidden absolute z-50 left-0 w-full max-w-72 mt-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl max-h-64 overflow-y-auto py-2">
+                    <ul id="suggestionsList" class="text-sm"></ul>
+                </div>
         </div>
 
         <button id="historyToggle"
@@ -328,7 +334,6 @@
                                     class="text-xs px-3 py-1 rounded-full font-semibold transition-all bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-700/50">
                                     PubChem
                                 </button>
-                                <!-- NEW: Wikipedia button -->
                                 <button id="descWikiBtn" onclick="handleWikiDescriptionClick()"
                                     class="text-xs px-3 py-1 rounded-full font-semibold transition-all bg-transparent text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600">
                                     Wikipedia
@@ -409,6 +414,12 @@
         </div>
     </footer>
 
+    <!-- Floating Feedback Button -->
+<button onclick="openFeedbackModal()" 
+        class="fixed bottom-6 right-6 z-[70] flex items-center gap-3 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3.5 rounded-3xl shadow-2xl transition-all hover:scale-105 active:scale-95">
+    <i class="ph-fill ph-chat-circle-dots text-2xl"></i>
+</button>
+
     <!-- Toast -->
     <div id="toast" role="status" aria-live="polite"
         class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 bg-slate-900 text-white px-4 py-3 rounded-lg shadow-xl translate-y-24 opacity-0 transition-all duration-300 flex items-center gap-3 z-50">
@@ -434,19 +445,19 @@
                             </thead>
                             <tbody>
                                 <tr class="border-b border-gray-100 dark:border-slate-700">
-                                    <td class="px-4 py-3 text-gray-700 dark:text-gray-200">Tailwind CSS</td>
+                                    <td class="px-4 py-3 text-gray-700 dark:text-gray-200">Tailwind CSS (CSS Framework)</td>
                                     <td class="px-4 py-3"><a href="https://tailwindcss.com" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">https://tailwindcss.com</a></td>
                                 </tr>
                                 <tr class="border-b border-gray-100 dark:border-slate-700">
-                                    <td class="px-4 py-3 text-gray-700 dark:text-gray-200">3Dmol.js</td>
+                                    <td class="px-4 py-3 text-gray-700 dark:text-gray-200">3Dmol.js (3D Viewer)</td>
                                     <td class="px-4 py-3"><a href="https://3dmol.org" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">https://3dmol.org</a></td>
                                 </tr>
                                 <tr class="border-b border-gray-100 dark:border-slate-700">
-                                    <td class="px-4 py-3 text-gray-700 dark:text-gray-200">Phosphor Icons</td>
+                                    <td class="px-4 py-3 text-gray-700 dark:text-gray-200">Phosphor Icons (Icon Library)</td>
                                     <td class="px-4 py-3"><a href="https://phosphoricons.com" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">https://phosphoricons.com</a></td>
                                 </tr>
                                 <tr class="border-b border-gray-100 dark:border-slate-700">
-                                    <td class="px-4 py-3 text-gray-700 dark:text-gray-200">KaTeX</td>
+                                    <td class="px-4 py-3 text-gray-700 dark:text-gray-200">KaTeX (LaTeX Rendering Library)</td>
                                     <td class="px-4 py-3"><a href="https://katex.org" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">https://katex.org</a></td>
                                 </tr>
                                 <tr class="border-b border-gray-100 dark:border-slate-700">
@@ -462,6 +473,11 @@
                                 <tr>
                                     <td class="px-4 py-3 text-gray-700 dark:text-gray-200">Google Gemini / Generative AI</td>
                                     <td class="px-4 py-3"><a href="https://developers.generativeai.google/" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">https://developers.generativeai.google/</a></td>
+                                </tr>
+
+                                <tr>
+                                    <td class="px-4 py-3 text-gray-700 dark:text-gray-200">Formspree (Form Provider)</td>
+                                    <td class="px-4 py-3"><a href="https://formspree.io" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">https://formspree.io</a></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -482,28 +498,95 @@
                 <button onclick="hideFAQ()" class="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white p-1" aria-label="Close FAQ dialog"><i class="ph-fill ph-x"></i></button>
             </div>
             <div class="mt-3 text-sm space-y-3">
+
                 <div>
                     <p class="font-bold">Where does the chemical data come from?</p>
-                    <p class="text-gray-700 dark:text-gray-300">The chemical data is fetched live from the PubChem PUG REST API (public database maintained by NCBI).</p>
+                    <p class="text-gray-700 dark:text-gray-300">All chemical data, structures, identifiers, and images are fetched live from the official <strong>PubChem PUG REST API</strong> maintained by the U.S. National Institutes of Health (NCBI).</p>
                 </div>
+
                 <div>
-                    <p class="font-bold">What is the AI description and is it required?</p>
-                    <p class="text-gray-700 dark:text-gray-300">Short descriptions are optionally generated using the configured Google Gemini API key. If unavailable, the app still shows raw PubChem data.</p>
+                    <p class="font-bold">What are the different description sources?</p>
+                    <p class="text-gray-700 dark:text-gray-300">You can choose between three sources:<br>
+                    • <strong>PubChem</strong> – Official description<br>
+                    • <strong>Wikipedia</strong> – Clean first-paragraph summary<br>
+                    • <strong>AI (Gemini)</strong> – Short, readable description with real-world uses (requires free API key)</p>
                 </div>
+
+                <div>
+                    <p class="font-bold">How do I set my preferred description source?</p>
+                    <p class="text-gray-700 dark:text-gray-300">Click the ⚙️ gear icon next to the “Description” title. Your choice is saved in your browser and will be used automatically for every new search.</p>
+                </div>
+
                 <div>
                     <p class="font-bold">Why is the 3D model sometimes missing?</p>
-                    <p class="text-gray-700 dark:text-gray-300">Not all PubChem records include a 3D SDF. When absent, the app displays an indicator and the 2D image instead.</p>
+                    <p class="text-gray-700 dark:text-gray-300">Not every compound in PubChem has a computed 3D structure. When unavailable, the app automatically falls back to the 2D image and shows a small notice.</p>
                 </div>
 
                 <div>
-                    <p class="font-bold">Can I use this website offline?</p>
-                    <p class="text-gray-700 dark:text-gray-300">No — the app relies on live API calls to PubChem (and optionally Gemini) so it requires network access.</p>
+                    <p class="font-bold">What do InChI and InChI Key mean?</p>
+                    <p class="text-gray-700 dark:text-gray-300">InChI is a unique text representation of a molecule’s structure. InChI Key is a shortened, searchable version of it (27 characters). Click the ℹ️ icon next to them for a simple explanation.</p>
                 </div>
 
                 <div>
-                    <p class="font-bold">Why are there two SMILES (Connectivity / Full) ?</p>
-                    <p class="text-gray-700 dark:text-gray-300">The connectivity SMILES is a minimal representation of the molecular structure, while the full SMILES includes all atoms and bonds. The full SMILES is more complete but can be longer and more complex.</p>
+                    <p class="font-bold">Why are there two SMILES formats?</p>
+                    <p class="text-gray-700 dark:text-gray-300">SMILES (Connectivity) is a simplified version (no stereochemistry). SMILES (Full) includes all atoms, bonds, and stereochemistry. Both are useful depending on your needs.</p>
                 </div>
+
+                <div>
+                    <p class="font-bold">How does the search suggestion (autocomplete) work?</p>
+                    <p class="text-gray-700 dark:text-gray-300">As you type, the app uses PubChem’s official autocomplete service to show real compound names in real time — just like Google. Click any suggestion to instantly search it.</p>
+                </div>
+
+                <div>
+                    <p class="font-bold">Is my Gemini API key safe?</p>
+                    <p class="text-gray-700 dark:text-gray-300">Yes. The key is stored only in your browser’s localStorage and is never sent to any server except Google’s official Gemini API. We never see or store it.</p>
+                </div>
+
+                <div>
+                    <p class="font-bold">Can I use ChemSearch offline?</p>
+                    <p class="text-gray-700 dark:text-gray-300">No. The app needs internet access to fetch data from PubChem, Wikipedia, and optionally Gemini. Once a compound is loaded, most information stays visible even if you lose connection.</p>
+                </div>
+
+                <div>
+                    <p class="font-bold">How can I send feedback or report a bug?</p>
+                    <p class="text-gray-700 dark:text-gray-300">Click the blue floating “Feedback” button in the bottom-right corner. Your message goes directly to the developer via Formspree.</p>
+                </div>
+
+                <div>
+                    <p class="font-bold">Why does Wikipedia sometimes say “description not available”?</p>
+                    <p class="text-gray-700 dark:text-gray-300">Wikipedia pages must have an exact title match. The app automatically converts PubChem names to title case, but some compounds (especially salts, complexes, or very new ones) don’t have a Wikipedia page yet.</p>
+                </div>
+
+                <div>
+                    <p class="font-bold">Can I search using a CAS number or InChI Key?</p>
+                    <p class="text-gray-700 dark:text-gray-300">Yes! The search box accepts CAS numbers, InChI Keys, and most common synonyms. PubChem’s backend handles the resolution automatically.</p>
+                </div>
+
+                <div>
+                    <p class="font-bold">Why does the elemental composition bar sometimes not add up to exactly 100%?</p>
+                    <p class="text-gray-700 dark:text-gray-300">It’s due to rounding to one decimal place. The actual calculation uses precise atomic weights — the total is always 100% before rounding.</p>
+                </div>
+
+                <div>
+                    <p class="font-bold">Why does the typewriter effect only appear on AI descriptions?</p>
+                    <p class="text-gray-700 dark:text-gray-300">It’s a deliberate design choice to make AI-generated text feel more dynamic and engaging. PubChem and Wikipedia descriptions load instantly, so no animation is needed.</p>
+                </div>
+
+                <div>
+                    <p class="font-bold">Does the app support isotopes, salts, or charged species?</p>
+                    <p class="text-gray-700 dark:text-gray-300">Yes. PubChem handles most isotopes, hydrates, salts, and charged molecules. Just search with the correct name or formula (e.g. “D2O”, “NaCl”, “sulfate ion”).</p>
+                </div>
+
+                <div>
+                    <p class="font-bold">Is my search history or API key shared with anyone?</p>
+                    <p class="text-gray-700 dark:text-gray-300">No. Everything is stored only in your browser’s localStorage. Nothing is sent to any server except the official PubChem and Gemini APIs when needed.</p>
+                </div>
+
+                <div>
+                    <p class="font-bold">Why is the InChI string sometimes extremely long?</p>
+                    <p class="text-gray-700 dark:text-gray-300">Complex molecules with many rings, branches, or stereocenters produce longer InChI strings. This is normal — it contains complete structural information.</p>
+                </div>
+
             </div>
             <div class="mt-4 flex justify-end">
                 <button onclick="hideFAQ()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Close</button>
@@ -606,6 +689,39 @@
             <div class="mt-6 flex justify-end">
                 <button onclick="closeDefaultSettingsModal()" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors">Close</button>
             </div>
+        </div>
+    </div>
+
+        <!-- Feedback Modal -->
+    <div id="feedbackModalBackdrop" class="fixed inset-0 bg-black/40 dark:bg-black/50 backdrop-blur-sm hidden z-[80] flex items-center justify-center" aria-hidden="true">
+        <div id="feedbackModal" role="dialog" class="w-full max-w-md mx-4 rounded-3xl p-6 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-gray-200 dark:border-slate-700 shadow-2xl">
+            <div class="flex items-start justify-between mb-5">
+                <div>
+                    <h3 class="text-xl font-bold">Send Feedback</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Help us improve ChemSearch</p>
+                </div>
+                <button onclick="closeFeedbackModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="ph-fill ph-x text-2xl"></i>
+                </button>
+            </div>
+
+            <form id="feedbackForm" onsubmit="handleFeedbackSubmit(event)">
+                <textarea id="feedbackMessage" rows="5" 
+                    class="w-full px-4 py-3 bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl resize-none focus:outline-none focus:border-blue-500 text-sm"
+                    placeholder="What do you like? What can be better? Any bugs?" required></textarea>
+
+                <div class="mt-4">
+                    <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Email / Name (optional)</label>
+                    <input type="text" id="feedbackEmail" 
+                        class="w-full px-4 py-3 bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:border-blue-500"
+                        placeholder="Write your email or name">
+                </div>
+
+                <button type="submit" id="feedbackSubmitBtn"
+                    class="mt-6 w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-2xl transition-colors flex items-center justify-center gap-2">
+                    Send Feedback
+                </button>
+            </form>
         </div>
     </div>
 </body>
