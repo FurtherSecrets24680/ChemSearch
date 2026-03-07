@@ -9,7 +9,7 @@ async function searchChemical(queryOverride) {
     setLoading(true);
 
     try {
-        // 1. Get CID
+        // Get CID
         const cidRes = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(query)}/cids/JSON`);
         if (!cidRes.ok) throw new Error();
         const cidData = await cidRes.json();
@@ -22,7 +22,7 @@ async function searchChemical(queryOverride) {
         state.wikiDesc = null;
         state.descSource = 'pubchem';
 
-        // 3. Fetch PubChem Data + Description
+        // Fetch PubChem Data + Description
         const [props, syns, sdf, desc] = await Promise.all([
             safeFetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/property/MolecularFormula,MolecularWeight,IUPACName,SMILES,ConnectivitySMILES,InChIKey,InChI,Charge/JSON`),
             safeFetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/synonyms/JSON`),
@@ -30,7 +30,7 @@ async function searchChemical(queryOverride) {
             safeFetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/description/JSON`)
         ]);
 
-        // 4. Process PubChem Data
+        // Process PubChem Data
         const p = props?.PropertyTable?.Properties?.[0] || {};
         const sList = syns?.InformationList?.Information?.[0]?.Synonym || [];
 
@@ -56,11 +56,11 @@ async function searchChemical(queryOverride) {
         }
         state.pubDesc = pubDescText;
 
-        // 5. Render PubChem Data immediately
+        // Render PubChem Data immediately
         renderUI(p, sList);
         setLoading(false);
 
-        // 6. Handle Description display (PubChem default)
+        // Handle Description display (PubChem default)
         const descSec = document.getElementById('section-about');
         const descVal = document.getElementById('val-desc');
         const aiLoader = document.getElementById('ai-loading');
@@ -146,10 +146,8 @@ async function fetchGeminiDescription(chemName) {
     }
 }
 
-// === Wikipedia short description (first paragraph only) ===
 async function fetchWikiDescription(chemName) {
     try {
-        // Convert ALL-CAPS PubChem name (like "PENTANE") to Title Case ("Pentane")
         let title = chemName.trim();
         if (title.length > 0) {
             title = title.charAt(0).toUpperCase() + title.slice(1).toLowerCase();
@@ -167,10 +165,8 @@ async function fetchWikiDescription(chemName) {
 }
 
 function renderUI(props, synonyms) {
-    // Text Fields
     setText('chem-name', capitalize(state.name));
     setText('chem-iupac', props.IUPACName || "N/A");
-    // CID display (link to PubChem)
     const cidEl = document.getElementById('chem-cid');
     if (cidEl) {
         if (state.cid) {

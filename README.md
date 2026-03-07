@@ -1,104 +1,136 @@
 # ChemSearch
 
-**A clean, fast, single-file web app for instant chemical compound lookup.**
+> A fast, clean web app for instant chemical compound lookup — powered by PubChem, Wikipedia and Gemini AI.
 
-ChemSearch pulls live data from **PubChem**, shows beautiful 2D/3D structures, all major identifiers, elemental analysis, and gives you **three smart description sources**: PubChem, **Wikipedia**, and **AI (Gemini)**.
+**[Live Demo → chemsearch.netlify.app](https://chemsearch.netlify.app)**
 
-**[Live Demo → https://chemsearch.netlify.app](https://chemsearch.netlify.app)**
-
----
-
-## ✨ Features
-
-- **Smart Search + Autosuggestions** – Real-time dropdown powered by PubChem as you type
-- **Rich Identifiers** – SMILES (Connectivity + Full), **InChI**, InChI Key, formula, weight, charge & empirical formula
-- **Visuals** – High-resolution 2D PNG + fully interactive 3D model (3Dmol.js)
-- **Elemental Analysis** – Beautiful percentage bar chart with precise atomic weights
-- **Multiple Description Sources**
-  - PubChem (official)
-  - Wikipedia (clean first-paragraph summary)
-  - AI (Gemini) with LaTeX support
-- **Default Description Setting** – Choose your preferred source (saved forever)
-- **Feedback Button** – Send suggestions or bug reports instantly via Formspree
-- **History** – Recent searches saved in browser (`localStorage`)
-- **Utilities** – One-click copy, PNG download, direct PubChem link
-- **Theme** – Light / Dark mode
-- **Mobile-friendly** – Works perfectly on phones and tablets
+![Dark mode search](./screenshots/01-search-view-dark.png)
 
 ---
 
-## 🚀 Usage
+## What it does
 
-1. Open the [live demo](https://chemsearch.netlify.app) or `index.html`
-2. Start typing a compound name (e.g. `aspirin`, `caffeine`, `pentane`)  
-   → Real-time suggestions appear instantly
-3. Press **Enter** or click the arrow
-4. Switch between **2D** and **3D** tabs
-5. Click the ⚙️ gear next to “Description” to set your default source
-6. Use the ℹ️ icons for quick explanations
-
-**Pro tip:** Your default source, search history, and Gemini API key are saved locally in your browser.
+Type any compound name and ChemSearch pulls live data from PubChem in under a second which gives you the full identifier set, a visual 2D/3D structure, elemental composition breakdown and a description from your choice of three sources.
 
 ---
 
-## 🔧 Description Sources
+## Features
 
-| Source          | Type                  | Speed      | API Key Needed | Notes                              |
-|-----------------|-----------------------|------------|----------------|------------------------------------|
-| **PubChem**     | Official              | Instant    | No             | Default                            |
-| **Wikipedia**   | Community summary     | Instant    | No             | Clean first paragraph              |
-| **AI (Gemini)** | Generated             | ~2–4 sec   | Yes            | Readable + real-world uses + LaTeX |
+**Search**
+- Real-time autosuggestions as you type (PubChem autocomplete API)
+- Recent search history saved locally
+- Keyboard shortcut: press `Enter` to search
+
+**Chemical Data**
+- Molecular formula, weight, charge and empirical formula
+- SMILES (Connectivity + Full), InChI, InChI Key and IUPAC name
+- Top 8 synonyms including common names and CAS-style identifiers
+- Direct link to the compound's PubChem page
+
+**Visuals**
+- High-resolution 2D structure (PNG)
+- Fully interactive 3D model with rotation and zoom (3Dmol.js)
+
+**Elemental Analysis**
+- Percentage composition bar chart with precise atomic weights for all 118 elements
+
+**Descriptions — three sources, your choice**
+
+| Source | Type | Speed | API Key |
+|---|---|---|---|
+| PubChem | Official | Instant | No |
+| Wikipedia | Community summary | Instant | No |
+| AI (Gemini) | Generated | ~2–4s | Yes |
+
+- Set a default source — saved permanently in your browser
+- AI descriptions support LaTeX rendering via KaTeX
+
+**Other**
+- Light / Dark mode
+- One-click copy for any identifier
+- PNG download
+- Feedback button (Formspree)
+- Fully mobile-friendly
 
 ---
 
-## 📸 Screenshots
+## Getting started
+
+**Option 1 — Just open it**
+```
+open index.html
+```
+Most features work directly. For autosuggestions and live API data, serve it locally to avoid CORS issues.
+
+**Option 2 — Local server (recommended)**
+```bash
+npx serve .
+# or use VS Code Live Server
+```
+Then open `http://localhost:3000`.
+
+**Option 3 — Live demo**
+Go to [chemsearch.netlify.app](https://chemsearch.netlify.app) — no setup needed.
+
+---
+
+## Using the AI description
+
+1. Click the **AI** button in the description section
+2. You'll be prompted to enter a Gemini API key
+3. Get a free key at [aistudio.google.com](https://aistudio.google.com)
+4. Your key is stored only in your browser's localStorage — it never leaves your device
+
+---
+
+## Project structure
+
+```
+chemsearch/
+├── index.html      # Complete single-page app
+├── script.js       # All logic — PubChem, Wikipedia, Gemini, autosuggestions
+├── style.css       # Extra styles
+└── screenshots/    # Preview images for README
+```
+
+No build step. No backend. No dependencies to install.
+
+---
+
+## Tech stack
+
+| Library | Purpose |
+|---|---|
+| [PubChem PUG REST API](https://pubchem.ncbi.nlm.nih.gov/) | Chemical data and autocomplete |
+| [Wikipedia REST API](https://en.wikipedia.org/api/rest_v1/) | Short descriptions |
+| [Google Gemini](https://aistudio.google.com/) | AI-generated descriptions |
+| [Tailwind CSS](https://tailwindcss.com/) | Styling |
+| [3Dmol.js](https://3dmol.csb.pitt.edu/) | Interactive 3D molecular viewer |
+| [KaTeX](https://katex.org/) | LaTeX rendering in AI descriptions |
+| [Phosphor Icons](https://phosphoricons.com/) | Icons |
+| [Formspree](https://formspree.io/) | Feedback form |
+
+---
+
+## Screenshots
 
 <table>
   <tr>
-    <td><img src="./screenshots/01-search-view-dark.png" alt="Dark mode search with autosuggestions" width="100%"/></td>
-    <td><img src="./screenshots/02-search-view-light.png" alt="Light mode search with autosuggestions" width="100%"/></td>
+    <td><img src="./screenshots/01-search-view-dark.png" alt="Dark mode" width="100%"/></td>
+    <td><img src="./screenshots/02-search-view-light.png" alt="Light mode" width="100%"/></td>
   </tr>
 </table>
 
 ---
 
-## 📁 Files
+## Notes
 
-- **`index.html`** – Complete single-page app (Tailwind + everything)
-- **`script.js`** – All logic (PubChem, Wikipedia, Gemini, autosuggestions, feedback, etc.)
-- **`style.css`** – Extra styles (included inline in HTML)
-
----
-
-## 🛠️ Libraries & Credits
-
-- **PubChem PUG REST API** – Chemical data & autocomplete  
-  https://pubchem.ncbi.nlm.nih.gov/
-- **Wikipedia REST API** – Short descriptions  
-  https://en.wikipedia.org/api/rest_v1/
-- **Google Gemini** – Optional AI descriptions  
-  https://developers.generativeai.google/
-- **Tailwind CSS** – Styling
-- **3Dmol.js** – Interactive 3D viewer
-- **KaTeX** – LaTeX rendering in AI descriptions
-- **Phosphor Icons** – Beautiful icons
-- **Formspree** – Feedback form submissions
-
-**Please cite PubChem and Wikipedia** when using data from this app.
+- Fully static — works without any server
+- All settings, history and API keys stay in your browser only
+- Please credit PubChem and Wikipedia when using data from this app in research or publications
 
 ---
 
-## 📝 Notes
+## License
 
-- Fully static — no server or build step required
-- Works offline after first load (except live API calls)
-- Recommended to serve locally (`npx serve` or VS Code Live Server) to avoid CORS issues
-- All settings and API keys stay **only in your browser**
-
----
-
-## 📄 License
-
-Open-source. See the `LICENSE` file for details.
-
----
+Open-source. See `LICENSE` for details.
